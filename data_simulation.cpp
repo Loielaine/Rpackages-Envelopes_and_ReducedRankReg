@@ -1,5 +1,3 @@
-
-
 //Project: Reduced_Rank_Envelope_Regression
 //liyixi
 //2018.11.04
@@ -49,7 +47,7 @@ int main(int argc, char *argv[]){
 			Gamma(i,j) = rn;
 		}	
 	}
-	//cout << Gamma << endl;
+
 
 	JacobiSVD<MatrixXd> svd_gamma(Gamma,ComputeThinV | ComputeThinU);
 	MatrixXd Gamma_orthogonal = svd_gamma.matrixU();
@@ -86,15 +84,6 @@ int main(int argc, char *argv[]){
 
 	//Beta
 	MatrixXd Beta = Gamma_orthogonal * eta_orthogonal * B; //r*u * u*d * d*p
-	
-	//****How to standardize Beta to f_norm = 1 ????
-	/*
-	for(int i=0; i<Beta.rows(); i++){
-		for(int j=0; j<Beta.cols(); j++){
-			Beta(i,j) = Beta(i,j)/sqrt((Beta*Beta.conjugate().transpose()).trace());
-		}	
-	}
-	*/
 
 	double f_norm = Beta.norm();
 	
@@ -105,10 +94,6 @@ int main(int argc, char *argv[]){
 		}	
 	}
 
-	//cout << sqrt(f_norm) << endl;
-	//cout << Beta.norm() << endl;
-
-
 //(2)Sigma generating
 	//Omega
 	MatrixXd Omega(u,u);
@@ -117,8 +102,12 @@ int main(int argc, char *argv[]){
 			Omega(i,j) = pow((-0.9),abs(i-j));
 		}	
 	}
-
+	MatrixXd Sigma(r,r);
 	//Omega_0
+	if(r==u){
+		Sigma = Gamma_orthogonal * Omega * Gamma_orthogonal.transpose();
+	}
+	else{
 	MatrixXd Omega_0(r-u,r-u);
 	for(int i=0; i<(r-u); i++){
 		for(int j=0; j<(r-u); j++){
@@ -126,10 +115,8 @@ int main(int argc, char *argv[]){
 		}	
 	}
 
-	MatrixXd Sigma = Gamma_orthogonal * Omega * Gamma_orthogonal.transpose() + Gamma_0 * Omega_0 * Gamma_0.transpose(); //r*u * u*u * u*r 
-	//cout << Sigma << endl;
-	//cout << Sigma.transpose() << endl;
-
+	Sigma = Gamma_orthogonal * Omega * Gamma_orthogonal.transpose() + Gamma_0 * Omega_0 * Gamma_0.transpose(); //r*u * u*u * u*r 
+	}
 //(3)X generating
 	//X~N(0,Ip) p*N
 	MatrixXd X(p,N);
@@ -142,12 +129,6 @@ int main(int argc, char *argv[]){
 	}
 
 	MatrixXd X_centered = X.rowwise() - X.colwise().mean();
-	//cout <<  X_centered << endl;
-	//cout << X.mean() << endl;
-	//cout << X_centered.mean() << endl;
-	//MatrixXd cov = (X_centered.adjoint() * X_centered) / double(X.rows() - 1);
-	//cout << cov << endl;
-
 
 //(4)Y generating
 	//error~N(0,Sigma) r*N
