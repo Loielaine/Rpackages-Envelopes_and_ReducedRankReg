@@ -1,0 +1,24 @@
+* installing *source* package ‘rrenv’ ...
+Warning in as.POSIXlt.POSIXct(x, tz) :
+  unknown timezone 'zone/tz/2018g.1.0/zoneinfo/America/Detroit'
+** libs
+make: Nothing to be done for `all'.
+make: `symbols.rds' is up to date.
+installing to /Users/Loielaine/Desktop/Good_Good_Study/2018Fall/BIOSTAT615_Statistic_Computing/project/Rpackage_rrenv/rrenv.Rcheck/rrenv/libs
+** R
+** preparing package for lazy loading
+Warning: package ‘Renvlp’ was built under R version 3.4.3
+Warning: package ‘expm’ was built under R version 3.4.4
+Warning: package ‘rstudioapi’ was built under R version 3.4.4
+Warning: package ‘MASS’ was built under R version 3.4.4
+[1] "u=10"
+[1] "d=5"
+---------Reduced-rank Envelope Regression--------
+  d  u      AIC
+1 5 10 264297.8
+** help
+No man pages found in package  ‘rrenv’ 
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded
+* DONE (rrenv)

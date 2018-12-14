@@ -16,12 +16,11 @@ R. Dennis Cook, Liliana Forzani, Xin Zhang; Envelopes and reduced-rank regressio
 
 ### Description
 
-In multivariate regression analysis there is the case in which the coefficients matrix is not full rank. In such cases the reduced-rank methodology can get a better estimate than OLS. Another improvement that can be done in multivariate analysis is when the estimation of the beta matrix can be done with less information without compromissing accuracy. For this, we look a subspace in which the projection the response is independent of the covariates. The envelope regression methodology estimates this subspace and also outperforms OLS. In this project we build a program that combines reduced-rank and envelope regression methodologies. Each of the methodologies don't compite with each other since they solve different challenges. It is because of this that the combine methodology outperforms OLS, reduced-rank and envelopes.
+In multivariate regression analysis there is the case in which the coefficients matrix is not full rank. In such cases the reduced-rank methodology can get a better estimate than OLS. Another improvement that can be done in multivariate analysis is when the estimation of the beta matrix can be done with less information without compromissing accuracy. For this, we look a subspace in which the projection of the response is immaterial of the covariates. This means that the kernel projection of the response is independent of the projection given the covariates and also is independent of the covariates. The envelope regression methodology estimates this subspace and also outperforms OLS. Each of this methodologies is an improvement of OLS multivariate regression that could be combined. In this project we build a program that combines reduced-rank and envelope regression methodologies into an R package. Each of the methodologies don't compite with each other since they attain different challenges. The reduced-rank envelope regression combines strenghts of each of the methodologies and it doesn't amplifies weaknes, it is because of this that the combine methodology outperforms OLS, reduced-rank and envelopes.
 
 ### Data simulation
 
-We compared the performance (in terms of the fit of model) of our new Reduced-rank envelope package and existing R packages (for OLS, Reduced-rank regression and Envelope regression). As you can see from the below plot, the Reduced-rank envelope regression model with our new R package always showed the best performance in all the three cases. In addition, it is also impressive that Reduced-rank envelope was stable between different sample sizes from 160 to 2000. In particular, it is noteworthy that in a small sample size, its performance was superior to other methods.
-
+We compared the performance (in terms of the fit of model) of our new Reduced-rank envelope package and existing R packages (for OLS, Reduced-rank regression and Envelope regression). As you can see from the below plot, the Reduced-rank envelope regression model with our new R package always showed the best performance in all the three cases. In addition, it is also impressive that Reduced-rank envelope was stable between different sample sizes from 160 to 2000. In particular, it is noteworthy that in a small sample size, its performance was superior to other methods. The first escenario (left most panel) is design to be ideal for reduced rank regression because the rank of the betas is only 1 and the envelope was the same as the amounts of predictios. For this case the RRE outperforms all three methodologies by almost one magnitud in small sample sizes. The second escenario shows that when the rank of beta matrix is close the dimension of the envelope the RRE gives a modest improvement over envelope regression. Lastly we show a case in which the reduce rank and the envelope methodologies by themselves should be useful. RRE still outperforms all of them in all of the sample sizes. The takeaway from this is that RRE adapts when one of the methodologies is not ideal and when they are combines them adequatly. 
 ![ScreenShot](https://github.com/shnlee-ds/Rpackages-Envelopes_and_ReducedRankReg/blob/master/simulation.png)
 
 ### Implementation of reduced-rank envelope regression
@@ -29,7 +28,7 @@ The pseudocode of the implementation of reduced-rank envelope regression is as f
 #### Data: Input multivariate data (X,Y), with dimension of X is p\*N, and dimension of Y is r\*N
 #### Result: Return the best selection of (u,d), estimates of beta, fitted values, residuals, variance of residuals, error table
 - if (u,d) is not given, do:
-  - select (u,d) by _rrenv_choose_du(X, Y, Beta=NULL)_
+  - select (u,d) by _rrenv.choose_du(X, Y, Beta=NULL)_
   - return the best selction of (u,d)
 - if (u,d) is given, do:
   - check whether the input (u,d) is valid
@@ -38,83 +37,27 @@ The pseudocode of the implementation of reduced-rank envelope regression is as f
     - estimate the envelope by _envlp_(X,Y,u,d)_ 
     - return Gamma, Gamma0
   - reduecd-rank regression:
-    - estimate beta by _R_reduced_rank_envelope_given_u_d(X,Y,u,d, Gamma, Gamma0)_ in C++
+    - estimate beta by _rrenv_given_du(X,Y,u,d, Gamma, Gamma0)_ in C++
     - return estimates of beta, fitted values, residuals, variance of residuals, error table
 
 Reduced-rank enevelope regression is implemented in R and C++, and is warpped into a R package, _rrenv_.
-```ruby
-rrenv = function(X,Y,u=NULL,d=NULL,Beta=NULL){
-  X = as.matrix(X)
-  Y = as.matrix(Y)
-  source("rrenv_choose_du.R") 
-  dyn.load("R_reduced_rank_envelope.so")
-  R_reduced_rank_envelope_given_u_d <- function(X,Y,u,d){
-    X = as.matrix(X)
-    Y = as.matrix(Y)
-    u = as.integer(u)
-    d = as.integer(d)
-    p = dim(X)[1]
-    r = dim(Y)[1]
-    Gamma = env(t(X),t(Y),u)$Gamma
-    Gamma0 = env(t(X),t(Y),u)$Gamma0
-    if(u==nrow(Y)){Gamma0 = matrix(0)}
-    R_beta = rep(0.0, length=nrow(Y)*nrow(X))
-    R_fitvalues = rep(0.0, length=nrow(Y)*ncol(Y))
-    R_estiduals = rep(0.0, length=nrow(Y)*ncol(Y))
-    R_estidualvariances = rep(0.0, length=nrow(Y)*nrow(Y))
-    est = .C("R_reduced_rank_envelope",
-             X,nrow(X),ncol(X), 
-             Y,nrow(Y),ncol(Y),
-             u,d,
-             Gamma,nrow(Gamma),ncol(Gamma),
-             Gamma0,nrow(Gamma0),ncol(Gamma0),
-             R_beta = R_beta,
-             R_fitvalues = R_fitvalues,
-             R_estiduals = R_estiduals,
-             R_estidualvariances = R_estidualvariances)
-    beta=matrix(est$R_beta,nrow=nrow(Y),ncol=nrow(X))
-    fitvalues=matrix(est$R_fitvalues,nrow=nrow(Y),ncol=ncol(Y))
-    estiduals=matrix(est$R_estiduals,nrow=nrow(Y),ncol=ncol(Y))
-    estidual_variance=matrix(est$R_estidualvariances,nrow=nrow(Y),ncol=nrow(Y))
-    if((u>d)&(u<=r)&(d<=min(p,r))){
-      err.table = matrix(0, ncol=3, nrow=1)
-      NR = (p+u-d)*d + ((r*(r+1))/2)
-      Lud = 0
-      Lud = sapply(1:dim(Y)[2],function(i){dmvnorm(Y[,i],fitvalues[,i],estidual_variance,log=T)})
-      Lud = sum(unlist(Lud))
-      err = 2*NR - 2*Lud
-      err.table[1,1]=d; err.table[1,2]=u; err.table[1,3]=err
-      err.table = as.data.frame(err.table)
-      names(err.table) = c('d','u','AIC')
-    return(list(beta=beta,fit_values=fitvalues,residuals=estiduals,
-                  residual_variance=estidual_variance,error_table=err.table))
-      }
-    else{
-      print("Error: Invalid u and d!")
-    }
-  }
-  if((is.null(u))&(is.null(d))){
-    choose_du =  rrenv.choose_du(X=X, Y=Y, Beta=Beta)
-    u = choose_du$best_combination$u
-    d = choose_du$best_combination$d
-    print(choose_du)
-  }
-  else{
-    u = as.integer(u)
-    print(paste0("u=",u))
-    d = as.integer(d)
-    print(paste0("d=",d))
-  }
-  est =  R_reduced_rank_envelope_given_u_d(X=X, Y=Y,u=u,d=d)
-  return(est)
-}
-```
+
 A example to use _rrenv_ in R is:
 ```ruby
-#input X and Y
-Y<-as.matrix(read.table("Y.txt"))
-X<-as.matrix(read.table("X.txt"))
-est <- rrenv(X,Y,20,10,NULL)
+library(MASS)
+# Generate Y
+mu <- sample(0:3, 15, replace = T)      
+Sigma = matrix(0.5 , nrow=15, ncol=15) + diag(1.5, nrow=15, ncol=15)
+Y <- mvrnorm(5000, mu = mu, Sigma = Sigma)
+
+# Calculate kernel density estimate
+X <- matrix(NA, nrow=5000, ncol=15)
+for(i in 1:15){
+  X[,i] = rnorm(5000, mean = sample(1:3, 1), sd = sample(1:3, 1))
+}
+
+est <- rrenv(t(X),t(Y),u=10,d=5,Beta=NULL)
+
 #returns
 beta<-est$beta
 fit_values<-est$fit_values

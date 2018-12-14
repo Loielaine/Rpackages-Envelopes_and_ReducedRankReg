@@ -1,0 +1,11 @@
+Package: rrenv
+Type: Package
+Title: reduced-rank envelope regression
+Version: 1.0
+Date: 2018-12-14
+Author: Pedro Orozco del Pino, Sunghun Lee, Yixi Li
+Maintainer: Yixi Li <liyixi@umich.edu>
+Description: This package is to build reduced-rank envelope regression models.
+License: GPL-3
+Imports: Rcpp (>= 1.0.0)
+LinkingTo: Rcpp
